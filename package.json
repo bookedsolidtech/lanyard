@@ -1,6 +1,6 @@
 {
   "name": "@bookedsolid/lanyard",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Switch between Claude OAuth accounts without touching your shell rc files. macOS Keychain–backed credential vault with refresh-token-safe swaps.",
   "license": "MIT",
   "author": "Booked Solid Technology <oss@bookedsolid.tech> (https://bookedsolid.tech)",
