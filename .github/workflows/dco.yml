@@ -18,6 +18,9 @@ jobs:
     name: DCO sign-off
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Skip the auto-opened release PR — its commits are authored by
+    # github-actions[bot] (changesets/action) and don't carry DCO trailers.
+    if: ${{ github.head_ref != 'changeset-release/main' }}
     steps:
       - name: Checkout
         # pin: actions/checkout v4.1.7
@@ -43,6 +46,14 @@ jobs:
           missing=()
           while IFS= read -r sha; do
             [[ -z "$sha" ]] && continue
+            author="$(git log -1 --format=%an "$sha")"
+            email="$(git log -1 --format=%ae "$sha")"
+            # Skip commits authored by GitHub Actions bots (changesets/action,
+            # dependabot, etc.) — they cannot sign with a real human DCO.
+            if [[ "$author" == *"[bot]" || "$email" == *"@users.noreply.github.com" ]]; then
+              echo "  $sha  skipped (bot author: $author <$email>)"
+              continue
+            fi
             msg="$(git log -1 --format=%B "$sha")"
             if ! grep -qE '^Signed-off-by: .+ <.+@.+>$' <<<"$msg"; then
               missing+=("$sha")

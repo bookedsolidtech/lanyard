@@ -18,7 +18,12 @@ jobs:
     name: Require changeset
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ !contains(github.event.pull_request.labels.*.name, '@changesets/skip') }}
+    # Skip on:
+    # - the release PR opened by changesets/action (head: changeset-release/main)
+    # - PRs explicitly labeled @changesets/skip (docs-only / test-only)
+    if: >-
+      ${{ github.head_ref != 'changeset-release/main'
+          && !contains(github.event.pull_request.labels.*.name, '@changesets/skip') }}
     steps:
       - name: Checkout
         # pin: actions/checkout v4.1.7
