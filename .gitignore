@@ -1,0 +1,39 @@
+node_modules/
+npm-debug.log*
+.DS_Store
+*.log
+package-lock.json
+
+# rea — Claude Code session-local artifacts
+RESTART.md
+
+# Generated during publish
+sbom.json
+*.tgz
+
+# TypeScript build output
+dist/
+
+# Test artifacts
+src/coverage/
+coverage/
+
+# Local scratch
+/.scratch/
+
+# === rea managed — do not edit between markers ===
+.rea/audit.jsonl
+.rea/audit-*.jsonl
+.rea/HALT
+.rea/metrics.jsonl
+.rea/serve.pid
+.rea/serve.state.json
+.rea/fingerprints.json
+.rea/last-review.json
+.rea/*.tmp
+.rea/*.tmp.*
+.rea/install-manifest.json.bak
+.rea/install-manifest.json.tmp
+.gitignore.rea-tmp-*
+.rea.lock
+# === end rea managed ===

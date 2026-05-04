@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  # Required by changesets/action:
+  contents: write # push "Version Packages" PR branch, create tags
+  pull-requests: write # open and update the "Version Packages" PR
+  # Required for npm publish with OIDC provenance:
+  id-token: write
+
+jobs:
+  release:
+    name: Version or publish
+    runs-on: ubuntu-latest
+    # Publishing requires human approval via a protected environment.
+    # Configure the `npm-publish` environment in repo Settings → Environments
+    # with at least one required reviewer.
+    environment: npm-publish
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        # pin: actions/checkout v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        # pin: pnpm/action-setup v4.0.0
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+
+      - name: Setup Node
+        # pin: actions/setup-node v4.0.3
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+        with:
+          node-version: 22
+          cache: pnpm
+          # registry-url enables npm publish via the setup-node-provided
+          # .npmrc. Combined with id-token: write, `npm publish --provenance`
+          # federates a short-lived OIDC token to npm — no long-lived
+          # NPM_TOKEN in the repo.
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Create release PR or publish
+        id: changesets
+        # pin: changesets/action v1.4.9
+        uses: changesets/action@e2f8e964d080ae97c874b19e27b12e0a8620fb6c
+        with:
+          version: pnpm changeset:version
+          publish: pnpm changeset:publish
+          commit: 'chore: release'
+          title: 'chore: release'
+        env:
+          # CHANGESET_TOKEN is an org PAT that can open PRs that bypass
+          # branch protection (the default GITHUB_TOKEN cannot).
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'

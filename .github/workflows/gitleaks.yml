@@ -1,0 +1,52 @@
+name: gitleaks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        # pin: actions/checkout v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.21.2"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan for secrets (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          gitleaks detect \
+            --config .gitleaks.toml \
+            --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.sha }}" \
+            --verbose --redact
+
+      - name: Scan for secrets (Push)
+        if: github.event_name == 'push'
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            gitleaks detect --config .gitleaks.toml --log-opts="HEAD~1..HEAD" --verbose --redact
+          else
+            gitleaks detect --config .gitleaks.toml --verbose --redact
+          fi
